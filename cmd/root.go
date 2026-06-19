@@ -11,7 +11,12 @@ import (
 var (
 	inputDir  string
 	outputDir string
+	format    string
 )
+
+var supportedFormats = map[string]bool{
+	"webp": true,
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "media-converter",
@@ -110,8 +115,36 @@ to process files concurrently using worker pools.`,
 
 		_ = os.Remove(testFile)
 
-		fmt.Println("Input directory found:", inputDir)
-		fmt.Println("Output directory ready:", outputDir)
+		// -------------------------
+		// Validar formato
+		// -------------------------
+
+		if !supportedFormats[format] {
+
+			fmt.Printf(
+				"Unsupported format '%s'\n",
+				format,
+			)
+
+			fmt.Println("Supported formats:")
+
+			for f := range supportedFormats {
+				fmt.Println("-", f)
+			}
+
+			return
+		}
+
+		// -------------------------
+		// Mostrar configuración
+		// -------------------------
+
+		fmt.Println()
+		fmt.Println("Configuration")
+		fmt.Println("-------------")
+		fmt.Println("Input :", inputDir)
+		fmt.Println("Output:", outputDir)
+		fmt.Println("Format:", format)
 	},
 }
 
@@ -141,11 +174,23 @@ func init() {
 		"Output directory",
 	)
 
+	rootCmd.Flags().StringVarP(
+		&format,
+		"format",
+		"f",
+		"",
+		"Output format",
+	)
+
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)
 	}
 
 	if err := rootCmd.MarkFlagRequired("output"); err != nil {
+		panic(err)
+	}
+
+	if err := rootCmd.MarkFlagRequired("format"); err != nil {
 		panic(err)
 	}
 }
