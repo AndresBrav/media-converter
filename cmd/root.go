@@ -3,13 +3,16 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
-var inputDir string
+var (
+	inputDir  string
+	outputDir string
+)
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "media-converter",
 	Short: "Convert images and videos",
@@ -18,7 +21,11 @@ to process files concurrently using worker pools.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		info, err := os.Stat(inputDir)
+		// -------------------------
+		// Validar input
+		// -------------------------
+
+		inputInfo, err := os.Stat(inputDir)
 
 		if err != nil {
 			fmt.Printf(
@@ -28,7 +35,7 @@ to process files concurrently using worker pools.`,
 			return
 		}
 
-		if !info.IsDir() {
+		if !inputInfo.IsDir() {
 			fmt.Printf(
 				"'%s' is not a directory\n",
 				inputDir,
@@ -36,14 +43,78 @@ to process files concurrently using worker pools.`,
 			return
 		}
 
-		fmt.Printf(
-			"Input directory found: %s\n",
-			inputDir,
+		// -------------------------
+		// Crear output si no existe
+		// -------------------------
+
+		if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+
+			err := os.MkdirAll(outputDir, 0755)
+
+			if err != nil {
+				fmt.Printf(
+					"Failed to create output directory '%s'\n",
+					outputDir,
+				)
+				return
+			}
+
+			fmt.Printf(
+				"Output directory created: %s\n",
+				outputDir,
+			)
+		}
+
+		// -------------------------
+		// Validar output
+		// -------------------------
+
+		outputInfo, err := os.Stat(outputDir)
+
+		if err != nil {
+			fmt.Printf(
+				"Unable to access output directory '%s'\n",
+				outputDir,
+			)
+			return
+		}
+
+		if !outputInfo.IsDir() {
+			fmt.Printf(
+				"'%s' is not a directory\n",
+				outputDir,
+			)
+			return
+		}
+
+		// -------------------------
+		// Validar permisos escritura
+		// -------------------------
+
+		testFile := filepath.Join(
+			outputDir,
+			".write_test",
 		)
+
+		file, err := os.Create(testFile)
+
+		if err != nil {
+			fmt.Printf(
+				"No write permission in '%s'\n",
+				outputDir,
+			)
+			return
+		}
+
+		file.Close()
+
+		_ = os.Remove(testFile)
+
+		fmt.Println("Input directory found:", inputDir)
+		fmt.Println("Output directory ready:", outputDir)
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	err := rootCmd.Execute()
 
@@ -62,9 +133,19 @@ func init() {
 		"Input directory",
 	)
 
-	err := rootCmd.MarkFlagRequired("input")
+	rootCmd.Flags().StringVarP(
+		&outputDir,
+		"output",
+		"o",
+		"",
+		"Output directory",
+	)
 
-	if err != nil {
+	if err := rootCmd.MarkFlagRequired("input"); err != nil {
+		panic(err)
+	}
+
+	if err := rootCmd.MarkFlagRequired("output"); err != nil {
 		panic(err)
 	}
 }
