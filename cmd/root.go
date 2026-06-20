@@ -16,7 +16,18 @@ var (
 
 var supportedFormats = map[string]bool{
 	"webp": true,
+	".png":  true,
+	".jpg":  true,
 }
+
+// estructura para almacenar los archivos a procesar
+type file struct {
+	inputPath  string
+	outputPath string
+}
+
+// arreglo de archivos a procesar
+var filesToProcess []file
 
 var rootCmd = &cobra.Command{
 	Use:   "media-converter",
@@ -145,6 +156,18 @@ to process files concurrently using worker pools.`,
 		fmt.Println("Input :", inputDir)
 		fmt.Println("Output:", outputDir)
 		fmt.Println("Format:", format)
+
+		// -------------------------
+		// obtener archivos a procesar de la carpeta de entrada
+		// -------------------------
+		filesToProcess, err = getFiles(inputDir, outputDir)
+
+		if err != nil {
+			fmt.Println("Failed to list input files")
+			return
+		}
+
+		resume(filesToProcess)
 	},
 }
 
@@ -153,6 +176,39 @@ func Execute() {
 
 	if err != nil {
 		os.Exit(1)
+	}
+}
+
+func getFiles(inputDir string, outputDir string) ([]file, error) {
+	var fileAddress []file
+	inputFile, err := os.ReadDir(inputDir)
+
+	if err != nil {
+		fmt.Printf(
+			"Error reading directory: '%s'\n",
+			inputDir,
+		)
+		return nil, err
+	}
+
+	for _, f := range inputFile {
+		inputPath := filepath.Join(inputDir, f.Name())
+		if supportedFormats[filepath.Ext(f.Name())] {
+			fileAddress = append(fileAddress,
+				file{
+					inputPath:  inputPath,
+					outputPath: outputDir,
+				})
+		}
+	}
+
+	return fileAddress, nil
+}
+
+func resume(files []file) {
+	fmt.Println("Resume")
+	for _, f := range files {
+		fmt.Println(f.inputPath, "->", f.outputPath)
 	}
 }
 
