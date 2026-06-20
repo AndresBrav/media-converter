@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Job almacena las rutas del archivo a procesar.
@@ -12,8 +13,8 @@ type Job struct {
 	OutputPath string
 }
 
-// GetJobs lee el directorio de entrada y filtra por extensiones soportadas, devolviendo una lista de Jobs.
-func GetJobs(inputDir string, outputDir string) ([]Job, error) {
+// GetJobs lee el directorio de entrada, filtra por extensiones soportadas y genera automáticamente la ruta de destino final para cada Job.
+func GetJobs(inputDir string, outputDir string, format string) ([]Job, error) {
 	var jobs []Job
 	inputFile, err := os.ReadDir(inputDir)
 
@@ -27,11 +28,17 @@ func GetJobs(inputDir string, outputDir string) ([]Job, error) {
 			continue
 		}
 		inputPath := filepath.Join(inputDir, f.Name())
-		if IsSupportedFormat(filepath.Ext(f.Name())) {
+		ext := filepath.Ext(f.Name())
+		if IsSupportedFormat(ext) {
+			// Calcular la ruta de salida específica (ej. resultado/foto1.webp)
+			baseName := strings.TrimSuffix(f.Name(), ext)
+			newFileName := baseName + format
+			outputPath := filepath.Join(outputDir, newFileName)
+
 			jobs = append(jobs,
 				Job{
 					InputPath:  inputPath,
-					OutputPath: outputDir,
+					OutputPath: outputPath,
 				})
 		}
 	}

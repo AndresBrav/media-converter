@@ -42,7 +42,7 @@ to process files concurrently using worker pools.`,
 		converter.ShowConfig(inputDir, outputDir, format)
 
 		// 5. Obtener y listar trabajos (jobs) a procesar
-		jobsToProcess, err := converter.GetJobs(inputDir, outputDir)
+		jobsToProcess, err := converter.GetJobs(inputDir, outputDir, format)
 		if err != nil {
 			fmt.Println("Failed to list input files")
 			return
