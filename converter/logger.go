@@ -18,4 +18,5 @@ func Resume(files []File) {
 	for _, f := range files {
 		fmt.Println(f.InputPath, "->", f.OutputPath)
 	}
+	fmt.Printf("Archivos encontrados: %d\n", len(files))
 }

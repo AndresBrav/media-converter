@@ -32,9 +32,11 @@ to process files concurrently using worker pools.`,
 		}
 
 		// 3. Validar formato solicitado
-		if !converter.ValidateFormat(format) {
+		normalizedFormat, ok := converter.ValidateFormat(format)
+		if !ok {
 			return
 		}
+		format = normalizedFormat
 
 		// 4. Mostrar configuración de ejecución
 		converter.ShowConfig(inputDir, outputDir, format)

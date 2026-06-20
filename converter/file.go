@@ -23,6 +23,9 @@ func GetFiles(inputDir string, outputDir string) ([]File, error) {
 	}
 
 	for _, f := range inputFile {
+		if f.IsDir() {
+			continue
+		}
 		inputPath := filepath.Join(inputDir, f.Name())
 		if IsSupportedFormat(filepath.Ext(f.Name())) {
 			fileAddress = append(fileAddress,
