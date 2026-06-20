@@ -12,11 +12,11 @@ func ShowConfig(input, output, format string) {
 	fmt.Println("Format:", format)
 }
 
-// Resume imprime la lista de archivos que se van a procesar.
-func Resume(files []File) {
+// Resume imprime la lista de trabajos (jobs) que se van a procesar.
+func Resume(jobs []Job) {
 	fmt.Println("Resume")
-	for _, f := range files {
-		fmt.Println(f.InputPath, "->", f.OutputPath)
+	for _, job := range jobs {
+		fmt.Println(job.InputPath, "->", job.OutputPath)
 	}
-	fmt.Printf("Archivos encontrados: %d\n", len(files))
+	fmt.Printf("Archivos encontrados: %d\n", len(jobs))
 }

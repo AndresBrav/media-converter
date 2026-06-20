@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 )
 
-// File almacena las rutas del archivo a procesar.
-type File struct {
+// Job almacena las rutas del archivo a procesar.
+type Job struct {
 	InputPath  string
 	OutputPath string
 }
 
-// GetFiles lee el directorio de entrada y filtra por extensiones soportadas.
-func GetFiles(inputDir string, outputDir string) ([]File, error) {
-	var fileAddress []File
+// GetJobs lee el directorio de entrada y filtra por extensiones soportadas, devolviendo una lista de Jobs.
+func GetJobs(inputDir string, outputDir string) ([]Job, error) {
+	var jobs []Job
 	inputFile, err := os.ReadDir(inputDir)
 
 	if err != nil {
@@ -28,13 +28,13 @@ func GetFiles(inputDir string, outputDir string) ([]File, error) {
 		}
 		inputPath := filepath.Join(inputDir, f.Name())
 		if IsSupportedFormat(filepath.Ext(f.Name())) {
-			fileAddress = append(fileAddress,
-				File{
+			jobs = append(jobs,
+				Job{
 					InputPath:  inputPath,
 					OutputPath: outputDir,
 				})
 		}
 	}
 
-	return fileAddress, nil
+	return jobs, nil
 }
