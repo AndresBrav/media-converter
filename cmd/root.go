@@ -15,7 +15,7 @@ var (
 )
 
 var supportedFormats = map[string]bool{
-	"webp": true,
+	".webp": true,
 	".png":  true,
 	".jpg":  true,
 }
