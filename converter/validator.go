@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var supportedFormats = map[string]bool{
 	".webp": true,
 	".png":  true,
 	".jpg":  true,
+	".jpeg": true,
 }
 
 // IsSupportedFormat comprueba si una extensión está en los formatos soportados.
 func IsSupportedFormat(ext string) bool {
-	return supportedFormats[ext]
+	return supportedFormats[strings.ToLower(ext)]
 }
 
 // ValidateInput comprueba que el directorio de entrada exista y sea válido.
@@ -70,15 +72,21 @@ func PrepareOutput(dir string) bool {
 	return true
 }
 
-// ValidateFormat verifica si el formato destino está soportado.
-func ValidateFormat(fmtStr string) bool {
-	if !supportedFormats[fmtStr] {
+// ValidateFormat verifica si el formato destino está soportado y lo devuelve normalizado.
+func ValidateFormat(fmtStr string) (string, bool) {
+	normalized := fmtStr
+	if !strings.HasPrefix(normalized, ".") {
+		normalized = "." + normalized
+	}
+	normalized = strings.ToLower(normalized)
+
+	if !supportedFormats[normalized] {
 		fmt.Printf("Unsupported format '%s'\n", fmtStr)
 		fmt.Println("Supported formats:")
 		for f := range supportedFormats {
-			fmt.Println("-", f)
+			fmt.Println("-", strings.TrimPrefix(f, "."))
 		}
-		return false
+		return "", false
 	}
-	return true
+	return normalized, true
 }
