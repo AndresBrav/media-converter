@@ -2,11 +2,10 @@ package converter
 
 import "sync"
 
-//Falta la estrestura de Job o se puede usar el File
+// Worker escucha el canal de Jobs y ejecuta la conversión de cada uno.
 func Worker(jobs chan Job, waitGroup *sync.WaitGroup) {
-
 	for job := range jobs {
-		convert(job)//asi se llamara la funcion de conversor 
+		convert(job)
 	}
 	waitGroup.Done()
 }

@@ -50,6 +50,8 @@ to process files concurrently using worker pools.`,
 			return
 		}
 
+		converter.Resume(jobsToProcess)
+
 		//6. Crear el pool de workers, segun la cantidad de procesadores
 		numProcessors := runtime.NumCPU()
 
