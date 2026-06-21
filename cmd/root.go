@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sync"
+	"runtime"
 
 	"github.com/spf13/cobra"
 	"media-converter/converter"
@@ -49,6 +51,31 @@ to process files concurrently using worker pools.`,
 		}
 
 		converter.Resume(jobsToProcess)
+
+		//6. Crear el pool de workers, segun la cantidad de procesadores
+		numProcessors := runtime.NumCPU()
+
+		jobs:= make(chan converter.Job, len(jobsToProcess))
+		var waitGroup sync.WaitGroup
+
+		//Lanzar workers
+		for i:= 0; i < numProcessors; i++ {
+			waitGroup.Add(1)
+			go converter.Worker(jobs, &waitGroup)
+		}
+
+		//Llenar el canal con los jobs
+		for _, job := range jobsToProcess {
+			jobs <- job  
+		}
+		close(jobs)
+
+		//Esperar a que terminen los workers
+		waitGroup.Wait()
+
+		fmt.Println("\nTodos los trabajos completados")
+
+
 	},
 }
 
