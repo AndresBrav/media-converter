@@ -7,6 +7,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -15,9 +16,35 @@ import (
 	"golang.org/x/image/webp"
 )
 
+var videoInputFormats = map[string]bool{
+	".mkv": true,
+	".avi": true,
+	".mov": true,
+}
+
+func isVideoInput(ext string) bool {
+	return videoInputFormats[strings.ToLower(ext)]
+}
+
 func convert(job Job, quality int) error {
 	formatInput := strings.ToLower(filepath.Ext(job.InputPath))
 	formatOutput := strings.ToLower(filepath.Ext(job.OutputPath))
+
+	// convertir video co ffmpeg
+	if isVideoInput(formatInput) && formatOutput == ".mp4" {
+		cmd := exec.Command("ffmpeg",
+			"-i", job.InputPath,
+			"-c:v", "libx264",
+			"-c:a", "aac",
+			"-y",
+			job.OutputPath,
+		)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("error convirtiendo video %s:\n%s%w", job.InputPath, string(output), err)
+		}
+		return nil
+	}
 
 	var img image.Image
 	var err error
@@ -69,4 +96,4 @@ func convert(job Job, quality int) error {
 	}
 
 	return nil
-}
+}
