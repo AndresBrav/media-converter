@@ -8,10 +8,10 @@ import (
 )
 
 // Worker escucha el canal de Jobs y ejecuta la conversión de cada uno.
-func Worker(id int, jobs chan Job, waitGroup *sync.WaitGroup, completed *int32, failed *int32, total int) {
+func Worker(id int, jobs chan Job, waitGroup *sync.WaitGroup, completed *int32, failed *int32, total int, quality int) {
 	fmt.Printf("Worker %d started\n", id)
 	for job := range jobs {
-		err := convert(job)
+		err := convert(job, quality)
 		current := atomic.AddInt32(completed, 1)
 		inputName := filepath.Base(job.InputPath)
 		outputName := filepath.Base(job.OutputPath)

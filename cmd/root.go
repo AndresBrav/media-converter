@@ -16,6 +16,7 @@ var (
 	outputDir  string
 	format     string
 	numWorkers int
+	quality    int
 )
 
 var rootCmd = &cobra.Command{
@@ -45,6 +46,12 @@ to process files concurrently using worker pools.`,
 		// 4. Validar número de workers
 		if numWorkers < 1 {
 			fmt.Println("Error: --workers debe ser mayor a 0")
+			return
+		}
+
+		// Validar calidad
+		if quality < 1 || quality > 100 {
+			fmt.Println("Error: --quality debe estar entre 1 y 100")
 			return
 		}
 
@@ -78,7 +85,7 @@ to process files concurrently using worker pools.`,
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs)
+			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs, quality)
 		}
 
 		//Llenar el canal con los jobs
@@ -113,6 +120,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&outputDir, "output", "o", "", "Output directory")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "", "Output format")
 	rootCmd.Flags().IntVarP(&numWorkers, "workers", "w", runtime.NumCPU(), "Number of parallel workers (default: number of CPU cores)")
+	rootCmd.Flags().IntVarP(&quality, "quality", "q", 80, "Quality of the output image (1-100)")
 
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)

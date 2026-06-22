@@ -3,8 +3,8 @@ module media-converter
 go 1.26.2
 
 require (
+	github.com/deepteams/webp v1.2.5
 	github.com/disintegration/imaging v1.6.2
-	github.com/mayahiro/go-webp v0.1.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/image v0.43.0
 )
