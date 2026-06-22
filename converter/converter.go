@@ -15,7 +15,7 @@ import (
 	"golang.org/x/image/webp"
 )
 
-func convert(job Job) {
+func convert(job Job) error {
 	formatInput := strings.ToLower(filepath.Ext(job.InputPath))
 	formatOutput := strings.ToLower(filepath.Ext(job.OutputPath))
 
@@ -27,8 +27,7 @@ func convert(job Job) {
 		// Usar el decodificador puro Go de golang.org/x/image/webp
 		f, errOpen := os.Open(job.InputPath)
 		if errOpen != nil {
-			fmt.Printf("Error abriendo archivo %s: %v\n", job.InputPath, errOpen)
-			return
+			return fmt.Errorf("error abriendo archivo %s: %w", job.InputPath, errOpen)
 		}
 		defer f.Close()
 		img, err = webp.Decode(f)
@@ -37,8 +36,7 @@ func convert(job Job) {
 	}
 
 	if err != nil {
-		fmt.Printf("Error leyendo imagen %s: %v\n", job.InputPath, err)
-		return
+		return fmt.Errorf("error leyendo imagen %s: %w", job.InputPath, err)
 	}
 
 	// --- Codificación ---
@@ -46,25 +44,22 @@ func convert(job Job) {
 	case ".jpg", ".jpeg", ".png":
 		err = imaging.Save(img, job.OutputPath)
 		if err != nil {
-			fmt.Printf("Error guardando imagen %s: %v\n", job.OutputPath, err)
-		} else {
-			fmt.Printf("✓ %s -> %s\n", job.InputPath, job.OutputPath)
+			return fmt.Errorf("error guardando imagen %s: %w", job.OutputPath, err)
 		}
 	case ".webp":
 		// Usar el codificador puro Go de mayahiro/go-webp
 		f, errCreate := os.Create(job.OutputPath)
 		if errCreate != nil {
-			fmt.Printf("Error creando archivo %s: %v\n", job.OutputPath, errCreate)
-			return
+			return fmt.Errorf("error creando archivo %s: %w", job.OutputPath, errCreate)
 		}
 		defer f.Close()
 		err = gowebp.Encode(f, img, nil)
 		if err != nil {
-			fmt.Printf("Error codificando webp %s: %v\n", job.OutputPath, err)
-		} else {
-			fmt.Printf("✓ %s -> %s\n", job.InputPath, job.OutputPath)
+			return fmt.Errorf("error codificando webp %s: %w", job.OutputPath, err)
 		}
 	default:
-		fmt.Println("Formato no soportado:", formatOutput)
+		return fmt.Errorf("formato no soportado: %s", formatOutput)
 	}
+
+	return nil
 }

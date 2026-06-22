@@ -67,12 +67,14 @@ to process files concurrently using worker pools.`,
 
 		jobs:= make(chan converter.Job, len(jobsToProcess))
 		var waitGroup sync.WaitGroup
+		var completed int32
+		totalJobs := len(jobsToProcess)
 
 		// Lanzar workers
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(jobs, &waitGroup)
+			go converter.Worker(jobs, &waitGroup, &completed, totalJobs)
 		}
 
 		//Llenar el canal con los jobs
