@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	inputDir  string
-	outputDir string
-	format    string
+	inputDir   string
+	outputDir  string
+	format     string
+	numWorkers int
 )
 
 var rootCmd = &cobra.Command{
@@ -40,10 +41,16 @@ to process files concurrently using worker pools.`,
 		}
 		format = normalizedFormat
 
-		// 4. Mostrar configuración de ejecución
-		converter.ShowConfig(inputDir, outputDir, format)
+		// 4. Validar número de workers
+		if numWorkers < 1 {
+			fmt.Println("Error: --workers debe ser mayor a 0")
+			return
+		}
 
-		// 5. Obtener y listar trabajos (jobs) a procesar
+		// 5. Mostrar configuración de ejecución
+		converter.ShowConfig(inputDir, outputDir, format, numWorkers)
+
+		// 6. Obtener y listar trabajos (jobs) a procesar
 		jobsToProcess, err := converter.GetJobs(inputDir, outputDir, format)
 		if err != nil {
 			fmt.Println("Failed to list input files")
@@ -52,14 +59,18 @@ to process files concurrently using worker pools.`,
 
 		converter.Resume(jobsToProcess)
 
-		//6. Crear el pool de workers, segun la cantidad de procesadores
-		numProcessors := runtime.NumCPU()
+		// 7. Calcular workers efectivos (no más workers que jobs disponibles)
+		effectiveWorkers := numWorkers
+		if effectiveWorkers > len(jobsToProcess) {
+			effectiveWorkers = len(jobsToProcess)
+		}
 
 		jobs:= make(chan converter.Job, len(jobsToProcess))
 		var waitGroup sync.WaitGroup
 
-		//Lanzar workers
-		for i:= 0; i < numProcessors; i++ {
+		// Lanzar workers
+		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
+		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
 			go converter.Worker(jobs, &waitGroup)
 		}
@@ -91,6 +102,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&inputDir, "input", "i", "", "Input directory")
 	rootCmd.Flags().StringVarP(&outputDir, "output", "o", "", "Output directory")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "", "Output format")
+	rootCmd.Flags().IntVarP(&numWorkers, "workers", "w", runtime.NumCPU(), "Number of parallel workers (default: number of CPU cores)")
 
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)
