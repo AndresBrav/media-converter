@@ -3,12 +3,14 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sync"
+	"os/exec"
 	"runtime"
+	"sync"
 	"time"
 
-	"github.com/spf13/cobra"
 	"media-converter/converter"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -43,22 +45,34 @@ to process files concurrently using worker pools.`,
 		}
 		format = normalizedFormat
 
-		// 4. Validar número de workers
+		// 4 verificar que ffmpeg instalado para videos
+		if err := exec.Command("ffmpeg", "-version").Run(); err != nil {
+			fmt.Println("ERROR: FFmpeg no está instalado o no está en el PATH.")
+			fmt.Println("FFmpeg es necesario para convertir videos.")
+			fmt.Println()
+			fmt.Println("Puedes instalarlo con el siguiente comando:")
+			fmt.Println("  winget install ffmpeg")
+			fmt.Println()
+			fmt.Println("O descárgalo desde: https://ffmpeg.org/download.html")
+			return
+		}
+
+		// 5. Validar número de workers
 		if numWorkers < 1 {
 			fmt.Println("Error: --workers debe ser mayor a 0")
 			return
 		}
 
-		// Validar calidad
+		// 6. Validar calidad
 		if quality < 1 || quality > 100 {
 			fmt.Println("Error: --quality debe estar entre 1 y 100")
 			return
 		}
 
-		// 5. Mostrar configuración de ejecución
+		// 7. Mostrar configuración de ejecución
 		converter.ShowConfig(inputDir, outputDir, format, numWorkers)
 
-		// 6. Obtener y listar trabajos (jobs) a procesar
+		// 8. Obtener y listar trabajos (jobs) a procesar
 		jobsToProcess, err := converter.GetJobs(inputDir, outputDir, format)
 		if err != nil {
 			fmt.Println("Failed to list input files")
@@ -67,13 +81,13 @@ to process files concurrently using worker pools.`,
 
 		converter.Resume(jobsToProcess)
 
-		// 7. Calcular workers efectivos (no más workers que jobs disponibles)
+		// 9. Calcular workers efectivos (no más workers que jobs disponibles)
 		effectiveWorkers := numWorkers
 		if effectiveWorkers > len(jobsToProcess) {
 			effectiveWorkers = len(jobsToProcess)
 		}
 
-		jobs:= make(chan converter.Job, len(jobsToProcess))
+		jobs := make(chan converter.Job, len(jobsToProcess))
 		var waitGroup sync.WaitGroup
 		var completed int32
 		var failed int32
@@ -90,7 +104,7 @@ to process files concurrently using worker pools.`,
 
 		//Llenar el canal con los jobs
 		for _, job := range jobsToProcess {
-			jobs <- job  
+			jobs <- job
 		}
 		close(jobs)
 
@@ -102,7 +116,6 @@ to process files concurrently using worker pools.`,
 		fmt.Println("\nTodos los trabajos completados")
 		fmt.Printf("Errores: %d\n", failed)
 		fmt.Printf("Total: %.1fs\n", elapsed.Seconds())
-
 
 	},
 }

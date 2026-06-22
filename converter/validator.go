@@ -12,6 +12,10 @@ var supportedFormats = map[string]bool{
 	".png":  true,
 	".jpg":  true,
 	".jpeg": true,
+	".mkv":  true,
+	".avi":  true,
+	".mov":  true,
+	".mp4":  true,
 }
 
 // IsSupportedFormat comprueba si una extensión está en los formatos soportados.
