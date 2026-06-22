@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -45,18 +46,6 @@ to process files concurrently using worker pools.`,
 		}
 		format = normalizedFormat
 
-		// 4 verificar que ffmpeg instalado para videos
-		if err := exec.Command("ffmpeg", "-version").Run(); err != nil {
-			fmt.Println("ERROR: FFmpeg no está instalado o no está en el PATH.")
-			fmt.Println("FFmpeg es necesario para convertir videos.")
-			fmt.Println()
-			fmt.Println("Puedes instalarlo con el siguiente comando:")
-			fmt.Println("  winget install ffmpeg")
-			fmt.Println()
-			fmt.Println("O descárgalo desde: https://ffmpeg.org/download.html")
-			return
-		}
-
 		// 5. Validar número de workers
 		if numWorkers < 1 {
 			fmt.Println("Error: --workers debe ser mayor a 0")
@@ -77,6 +66,28 @@ to process files concurrently using worker pools.`,
 		if err != nil {
 			fmt.Println("Failed to list input files")
 			return
+		}
+
+		// Verificar si se requiere FFmpeg (solo si hay algún video en la lista de trabajos)
+		requiresFFmpeg := false
+		for _, job := range jobsToProcess {
+			if converter.IsVideoInput(filepath.Ext(job.InputPath)) {
+				requiresFFmpeg = true
+				break
+			}
+		}
+
+		if requiresFFmpeg {
+			if err := exec.Command("ffmpeg", "-version").Run(); err != nil {
+				fmt.Println("ERROR: FFmpeg no está instalado o no está en el PATH.")
+				fmt.Println("FFmpeg es necesario para convertir videos.")
+				fmt.Println()
+				fmt.Println("Puedes instalarlo con el siguiente comando:")
+				fmt.Println("  winget install ffmpeg")
+				fmt.Println()
+				fmt.Println("O descárgalo desde: https://ffmpeg.org/download.html")
+				return
+			}
 		}
 
 		converter.Resume(jobsToProcess)

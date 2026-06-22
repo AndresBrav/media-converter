@@ -20,9 +20,11 @@ var videoInputFormats = map[string]bool{
 	".mkv": true,
 	".avi": true,
 	".mov": true,
+	".mp4": true,
 }
 
-func isVideoInput(ext string) bool {
+// IsVideoInput comprueba si una extensión corresponde a un formato de video.
+func IsVideoInput(ext string) bool {
 	return videoInputFormats[strings.ToLower(ext)]
 }
 
@@ -31,7 +33,7 @@ func convert(job Job, quality int) error {
 	formatOutput := strings.ToLower(filepath.Ext(job.OutputPath))
 
 	// convertir video co ffmpeg
-	if isVideoInput(formatInput) && formatOutput == ".mp4" {
+	if IsVideoInput(formatInput) && formatOutput == ".mp4" {
 		cmd := exec.Command("ffmpeg",
 			"-i", job.InputPath,
 			"-c:v", "libx264",
