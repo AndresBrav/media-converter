@@ -78,7 +78,7 @@ to process files concurrently using worker pools.`,
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(jobs, &waitGroup, &completed, &failed, totalJobs)
+			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs)
 		}
 
 		//Llenar el canal con los jobs
