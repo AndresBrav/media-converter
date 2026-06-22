@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"runtime"
+	"time"
 
 	"github.com/spf13/cobra"
 	"media-converter/converter"
@@ -70,6 +71,8 @@ to process files concurrently using worker pools.`,
 		var completed int32
 		totalJobs := len(jobsToProcess)
 
+		startTime := time.Now()
+
 		// Lanzar workers
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
@@ -86,7 +89,10 @@ to process files concurrently using worker pools.`,
 		//Esperar a que terminen los workers
 		waitGroup.Wait()
 
+		elapsed := time.Since(startTime)
+
 		fmt.Println("\nTodos los trabajos completados")
+		fmt.Printf("Total: %.1fs\n", elapsed.Seconds())
 
 
 	},
