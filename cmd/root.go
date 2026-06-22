@@ -69,6 +69,7 @@ to process files concurrently using worker pools.`,
 		jobs:= make(chan converter.Job, len(jobsToProcess))
 		var waitGroup sync.WaitGroup
 		var completed int32
+		var failed int32
 		totalJobs := len(jobsToProcess)
 
 		startTime := time.Now()
@@ -77,7 +78,7 @@ to process files concurrently using worker pools.`,
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(jobs, &waitGroup, &completed, totalJobs)
+			go converter.Worker(jobs, &waitGroup, &completed, &failed, totalJobs)
 		}
 
 		//Llenar el canal con los jobs
@@ -92,6 +93,7 @@ to process files concurrently using worker pools.`,
 		elapsed := time.Since(startTime)
 
 		fmt.Println("\nTodos los trabajos completados")
+		fmt.Printf("Errores: %d\n", failed)
 		fmt.Printf("Total: %.1fs\n", elapsed.Seconds())
 
 
