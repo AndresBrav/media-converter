@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"runtime"
+	"time"
 
 	"github.com/spf13/cobra"
 	"media-converter/converter"
@@ -15,6 +16,7 @@ var (
 	outputDir  string
 	format     string
 	numWorkers int
+	quality    int
 )
 
 var rootCmd = &cobra.Command{
@@ -47,6 +49,12 @@ to process files concurrently using worker pools.`,
 			return
 		}
 
+		// Validar calidad
+		if quality < 1 || quality > 100 {
+			fmt.Println("Error: --quality debe estar entre 1 y 100")
+			return
+		}
+
 		// 5. Mostrar configuración de ejecución
 		converter.ShowConfig(inputDir, outputDir, format, numWorkers)
 
@@ -67,12 +75,17 @@ to process files concurrently using worker pools.`,
 
 		jobs:= make(chan converter.Job, len(jobsToProcess))
 		var waitGroup sync.WaitGroup
+		var completed int32
+		var failed int32
+		totalJobs := len(jobsToProcess)
+
+		startTime := time.Now()
 
 		// Lanzar workers
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(jobs, &waitGroup)
+			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs, quality)
 		}
 
 		//Llenar el canal con los jobs
@@ -84,7 +97,11 @@ to process files concurrently using worker pools.`,
 		//Esperar a que terminen los workers
 		waitGroup.Wait()
 
+		elapsed := time.Since(startTime)
+
 		fmt.Println("\nTodos los trabajos completados")
+		fmt.Printf("Errores: %d\n", failed)
+		fmt.Printf("Total: %.1fs\n", elapsed.Seconds())
 
 
 	},
@@ -103,6 +120,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&outputDir, "output", "o", "", "Output directory")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "", "Output format")
 	rootCmd.Flags().IntVarP(&numWorkers, "workers", "w", runtime.NumCPU(), "Number of parallel workers (default: number of CPU cores)")
+	rootCmd.Flags().IntVarP(&quality, "quality", "q", 80, "Quality of the output image (1-100)")
 
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)
