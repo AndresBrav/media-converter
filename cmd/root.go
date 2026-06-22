@@ -68,12 +68,14 @@ to process files concurrently using worker pools.`,
 			return
 		}
 
-		// Verificar si se requiere FFmpeg (solo si hay algún video en la lista de trabajos)
+		// Verificar si se requiere FFmpeg (solo si el formato de salida es .mp4 y hay videos en la lista)
 		requiresFFmpeg := false
-		for _, job := range jobsToProcess {
-			if converter.IsVideoInput(filepath.Ext(job.InputPath)) {
-				requiresFFmpeg = true
-				break
+		if format == ".mp4" {
+			for _, job := range jobsToProcess {
+				if converter.IsVideoInput(filepath.Ext(job.InputPath)) {
+					requiresFFmpeg = true
+					break
+				}
 			}
 		}
 
