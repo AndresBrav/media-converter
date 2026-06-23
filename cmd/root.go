@@ -15,11 +15,15 @@ import (
 )
 
 var (
-	inputDir   string
-	outputDir  string
-	format     string
-	numWorkers int
-	quality    int
+	inputDir      string
+	outputDir     string
+	format        string
+	numWorkers    int
+	quality       int
+	width         int
+	height        int
+	watermarkPath string
+	thumbnail     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -55,6 +59,24 @@ to process files concurrently using worker pools.`,
 		// 6. Validar calidad
 		if quality < 1 || quality > 100 {
 			fmt.Println("Error: --quality debe estar entre 1 y 100")
+			return
+		}
+
+		// 6.1 Validar watermark si se proporciona
+		if watermarkPath != "" {
+			if _, err := os.Stat(watermarkPath); os.IsNotExist(err) {
+				fmt.Printf("Error: archivo de watermark '%s' no existe\n", watermarkPath)
+				return
+			}
+		}
+
+		// 6.2 Validar width/height
+		if width < 0 {
+			fmt.Println("Error: --width debe ser un número positivo o 0")
+			return
+		}
+		if height < 0 {
+			fmt.Println("Error: --height debe ser un número positivo o 0")
 			return
 		}
 
@@ -106,13 +128,31 @@ to process files concurrently using worker pools.`,
 		var failed int32
 		totalJobs := len(jobsToProcess)
 
+		opts := converter.Options{
+			Quality:   quality,
+			Width:     width,
+			Height:    height,
+			Watermark: watermarkPath,
+			Thumbnail: thumbnail,
+		}
+
+		if width > 0 || height > 0 {
+			fmt.Printf("Resize : %dx%d\n", width, height)
+		}
+		if watermarkPath != "" {
+			fmt.Println("Watermark :", watermarkPath)
+		}
+		if thumbnail {
+			fmt.Println("Thumbnail : 150x150")
+		}
+
 		startTime := time.Now()
 
 		// Lanzar workers
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 		for i := 0; i < effectiveWorkers; i++ {
 			waitGroup.Add(1)
-			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs, quality)
+			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs, opts)
 		}
 
 		//Llenar el canal con los jobs
@@ -147,6 +187,10 @@ func init() {
 	rootCmd.Flags().StringVarP(&format, "format", "f", "", "Output format")
 	rootCmd.Flags().IntVarP(&numWorkers, "workers", "w", runtime.NumCPU(), "Number of parallel workers (default: number of CPU cores)")
 	rootCmd.Flags().IntVarP(&quality, "quality", "q", 80, "Quality of the output image (1-100)")
+	rootCmd.Flags().IntVarP(&width, "width", "", 0, "Max width in pixels (0 = keep original)")
+	rootCmd.Flags().IntVarP(&height, "height", "", 0, "Max height in pixels (0 = keep original)")
+	rootCmd.Flags().StringVarP(&watermarkPath, "watermark", "", "", "Path to watermark image")
+	rootCmd.Flags().BoolVarP(&thumbnail, "thumbnail", "", false, "Generate 150x150 thumbnail")
 
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)
