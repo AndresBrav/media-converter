@@ -24,6 +24,7 @@ var (
 	height        int
 	watermarkPath string
 	thumbnail     bool
+	recursive     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -84,7 +85,7 @@ to process files concurrently using worker pools.`,
 		converter.ShowConfig(inputDir, outputDir, format, numWorkers)
 
 		// 8. Obtener y listar trabajos (jobs) a procesar
-		jobsToProcess, err := converter.GetJobs(inputDir, outputDir, format)
+		jobsToProcess, err := converter.GetJobs(inputDir, outputDir, format, recursive)
 		if err != nil {
 			fmt.Println("Failed to list input files")
 			return
@@ -191,6 +192,7 @@ func init() {
 	rootCmd.Flags().IntVarP(&height, "height", "", 0, "Max height in pixels (0 = keep original)")
 	rootCmd.Flags().StringVarP(&watermarkPath, "watermark", "", "", "Path to watermark image")
 	rootCmd.Flags().BoolVarP(&thumbnail, "thumbnail", "", false, "Generate 150x150 thumbnail")
+	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Process directories recursively")
 
 	if err := rootCmd.MarkFlagRequired("input"); err != nil {
 		panic(err)
