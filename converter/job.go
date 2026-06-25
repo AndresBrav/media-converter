@@ -31,7 +31,7 @@ func GetJobs(inputDir string, outputDir string, format string, recursive bool) (
 			}
 			inputPath := filepath.Join(inputDir, f.Name())
 			ext := filepath.Ext(f.Name())
-			if IsSupportedFormat(ext) {
+			if IsSupportedFormat(ext) && IsVideoInput(ext) == IsVideoInput(format) {
 				baseName := strings.TrimSuffix(f.Name(), ext)
 				newFileName := baseName + format
 				outputPath := filepath.Join(outputDir, newFileName)
@@ -53,7 +53,7 @@ func GetJobs(inputDir string, outputDir string, format string, recursive bool) (
 		}
 
 		ext := filepath.Ext(info.Name())
-		if IsSupportedFormat(ext) {
+		if IsSupportedFormat(ext) && IsVideoInput(ext) == IsVideoInput(format) {
 			//Calcular la ruta relativa desde inputDir
 			relPath, errRel := filepath.Rel(inputDir, inputPath)
 			if errRel != nil {
