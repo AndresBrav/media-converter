@@ -1,13 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sync"
-	"time"
 
 	"media-converter/converter"
 
@@ -117,17 +116,11 @@ to process files concurrently using worker pools.`,
 
 		converter.Resume(jobsToProcess)
 
-		// 9. Calcular workers efectivos (no más workers que jobs disponibles)
+		// 9. Calcular workers efectivos
 		effectiveWorkers := numWorkers
 		if effectiveWorkers > len(jobsToProcess) {
 			effectiveWorkers = len(jobsToProcess)
 		}
-
-		jobs := make(chan converter.Job, len(jobsToProcess))
-		var waitGroup sync.WaitGroup
-		var completed int32
-		var failed int32
-		totalJobs := len(jobsToProcess)
 
 		opts := converter.Options{
 			Quality:   quality,
@@ -147,29 +140,31 @@ to process files concurrently using worker pools.`,
 			fmt.Println("Thumbnail : 150x150")
 		}
 
-		startTime := time.Now()
-
-		// Lanzar workers
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
-		for i := 0; i < effectiveWorkers; i++ {
-			waitGroup.Add(1)
-			go converter.Worker(i+1, jobs, &waitGroup, &completed, &failed, totalJobs, opts)
+
+		convErr := converter.RunConversion(
+			context.Background(),
+			inputDir, outputDir, format,
+			opts, numWorkers, recursive,
+			func(ev converter.ProgressEvent) {
+				switch ev.Type {
+				case "worker_start":
+					fmt.Printf("Worker %d ▶ %s\n", ev.WorkerID, filepath.Base(ev.InputPath))
+				case "worker_end":
+					if ev.Status == "success" {
+						fmt.Printf("[%d/%d] ✓ %s → %s\n", ev.Current, ev.Total, filepath.Base(ev.InputPath), filepath.Base(ev.OutputPath))
+					} else {
+						fmt.Printf("[%d/%d] ✗ %s: %s\n", ev.Current, ev.Total, filepath.Base(ev.InputPath), ev.Error)
+					}
+				case "complete":
+					fmt.Printf("\nCompletado — %d exitosos, %d errores, %.1fs\n",
+						ev.Current-ev.Failed, ev.Failed, ev.Elapsed)
+				}
+			},
+		)
+		if convErr != nil {
+			fmt.Printf("Error: %v\n", convErr)
 		}
-
-		//Llenar el canal con los jobs
-		for _, job := range jobsToProcess {
-			jobs <- job
-		}
-		close(jobs)
-
-		//Esperar a que terminen los workers
-		waitGroup.Wait()
-
-		elapsed := time.Since(startTime)
-
-		fmt.Println("\nTodos los trabajos completados")
-		fmt.Printf("Errores: %d\n", failed)
-		fmt.Printf("Total: %.1fs\n", elapsed.Seconds())
 
 	},
 }
