@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"media-converter/converter"
 
@@ -142,11 +143,15 @@ to process files concurrently using worker pools.`,
 
 		fmt.Printf("Lanzando %d workers...\n\n", effectiveWorkers)
 
+		var printMu sync.Mutex
+
 		convErr := converter.RunConversion(
 			context.Background(),
 			inputDir, outputDir, format,
 			opts, numWorkers, recursive,
 			func(ev converter.ProgressEvent) {
+				printMu.Lock()
+				defer printMu.Unlock()
 				switch ev.Type {
 				case "worker_start":
 					fmt.Printf("Worker %d ▶ %s\n", ev.WorkerID, filepath.Base(ev.InputPath))
